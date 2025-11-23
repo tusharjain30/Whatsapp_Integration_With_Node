@@ -1,0 +1,281 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===============================
+// ENUMS
+// ===============================
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  AUDIO
+  VIDEO
+  DOCUMENT
+}
+
+// ===============================
+// WHATSAPP ACCOUNT
+// ===============================
+
+model WhatsAppAccount {
+  id Int @id @default(autoincrement())
+
+  phoneNumber       String
+  phoneNumberId     String? // WhatsApp Cloud API phone_number_id
+  businessAccountId String? // WhatsApp Business Account ID
+  displayName       String? // WhatsApp profile name
+  accessToken       String
+  isConnected       Boolean  @default(false)
+  webhookUrl        String?
+  isDeleted         Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  contacts      Contact[]
+  conversations Conversation[]
+  messages      Message[]
+  media         Media[]
+  webhookEvents WebhookEvent[]
+  botRules      BotRule[]
+  watemplates   WATemplate[]
+}
+
+//
+// ===============================
+// CONTACT
+// ===============================
+//
+
+model Contact {
+  id Int @id @default(autoincrement())
+
+  waAccountId   Int
+  phone         String    @db.VarChar(20)
+  firstName     String?
+  lastName      String?
+  profilePicUrl String?
+  lastMessage   String?
+  lastMessageAt DateTime?
+  isBlocked     Boolean   @default(false)
+  metadata      Json?
+  isDeleted     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  whatsappAccount WhatsAppAccount @relation(fields: [waAccountId], references: [id])
+  conversations   Conversation[]
+  messages        Message[]
+
+  @@unique([waAccountId, phone])
+  @@index([waAccountId])
+  @@index([phone])
+}
+
+//
+// ===============================
+// MESSAGE
+// ===============================
+//
+
+model Message {
+  id Int @id @default(autoincrement())
+
+  waAccountId    Int
+  contactId      Int
+  conversationId Int?
+
+  direction MessageDirection
+  status    MessageStatus    @default(PENDING)
+
+  messageType MessageType // text, image, audio, video, document
+  text        String?
+  mediaId     Int?
+
+  waMessageId  String? // WhatsApp message ID
+  timestamp    DateTime?
+  errorMessage String?
+  metadata     Json?
+  isDeleted    Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  whatsappAccount WhatsAppAccount @relation(fields: [waAccountId], references: [id])
+  contact         Contact         @relation(fields: [contactId], references: [id])
+  conversation    Conversation?   @relation(fields: [conversationId], references: [id])
+  media           Media?          @relation(fields: [mediaId], references: [id])
+
+  @@index([waAccountId])
+  @@index([contactId])
+  @@index([conversationId])
+  @@index([status])
+  @@index([waMessageId])
+}
+
+//
+// ===============================
+// CONVERSATION
+// ===============================
+//
+
+model Conversation {
+  id Int @id @default(autoincrement())
+
+  waAccountId Int
+  contactId   Int
+
+  lastMessage   String?
+  lastMessageAt DateTime?
+  unreadCount   Int       @default(0)
+  isDeleted     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  whatsappAccount WhatsAppAccount @relation(fields: [waAccountId], references: [id])
+  contact         Contact         @relation(fields: [contactId], references: [id])
+  messages        Message[]
+
+  @@unique([waAccountId, contactId])
+  @@index([waAccountId])
+  @@index([contactId])
+  @@index([lastMessageAt])
+}
+
+//
+// ===============================
+// MEDIA
+// ===============================
+//
+
+model Media {
+  id Int @id @default(autoincrement())
+
+  waAccountId Int
+  type        String // image, video, audio, document, sticker
+  mimeType    String?
+  size        Int?
+  url         String // storage URL
+  waMediaId   String? // WhatsApp cloud media id
+  isDeleted   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  whatsappAccount WhatsAppAccount @relation(fields: [waAccountId], references: [id])
+  messages        Message[]
+  botRules        BotRule[]
+
+  @@index([waAccountId])
+}
+
+//
+// ===============================
+// WEBHOOK EVENTS
+// ===============================
+//
+
+model WebhookEvent {
+  id Int @id @default(autoincrement())
+
+  waAccountId Int
+  eventType   String?
+  payload     Json
+  receivedAt  DateTime  @default(now())
+  processed   Boolean   @default(false)
+  processedAt DateTime?
+
+  // Relations
+  whatsappAccount WhatsAppAccount @relation(fields: [waAccountId], references: [id])
+
+  @@index([waAccountId])
+  @@index([eventType])
+  @@index([processed])
+}
+
+//
+// ===============================
+// BOT RULES
+// ===============================
+//
+
+model BotRule {
+  id Int @id @default(autoincrement())
+
+  waAccountId  Int
+  name         String
+  triggerType  String // KEYWORD, CONTAINS, EXACT, STARTS_WITH, AI
+  keyword      String?
+  replyText    String?
+  replyMediaId Int?
+  isActive     Boolean  @default(true)
+  isDeleted    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  whatsappAccount WhatsAppAccount @relation(fields: [waAccountId], references: [id])
+  replyMedia      Media?          @relation(fields: [replyMediaId], references: [id])
+
+  @@index([waAccountId])
+  @@index([triggerType])
+  @@index([keyword])
+}
+
+//
+// ===============================
+// WA TEMPLATE
+// ===============================
+//
+
+model WATemplate {
+  id Int @id @default(autoincrement())
+
+  waAccountId Int
+  name        String
+  language    String
+  category    String
+  status      String
+  components  Json
+  example     Json?
+  reason      String?
+  isDeleted   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  whatsappAccount WhatsAppAccount @relation(fields: [waAccountId], references: [id])
+
+  @@unique([waAccountId, name])
+  @@index([status])
+  @@index([category])
+}
