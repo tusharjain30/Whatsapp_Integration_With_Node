@@ -30,12 +30,11 @@ router.get('/', (req, res) => {
     };
 });
 
-// This endpoint receives messages + notifications from WhatsApp.
+// This endpoint receives messages + notifications from WhatsApp. Meta itself will call this route.
 router.post('/', async (req, res) => {
     try {
 
         const body = req.body;
-
         const entries = body.entry || [];
         for (const entry of entries) {
             const changes = entry.changes || [];

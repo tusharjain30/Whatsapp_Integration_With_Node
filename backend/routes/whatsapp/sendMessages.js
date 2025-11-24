@@ -3,20 +3,27 @@ const router = express.Router();
 const { PrismaClient } = require("../../generated/prisma/client");
 const { RESPONSE_CODES } = require("../../config/constant");
 const prisma = new PrismaClient();
+const { sendTextMessage } = require("../../services/whatsapp");
 
 router.post('/text', async (req, res) => {
     try {
 
         const { waAccountId, to, text } = req.body;
         if (!waAccountId || !to || !text)
-            return res.status(400).json({
-                message: 'waAccountId, to, text is required'
+            return res.status(RESPONSE_CODES.BAD_REQUEST).json({
+                status: 0,
+                message: "waAccountId, to, text is required",
+                statusCode: RESPONSE_CODES.BAD_REQUEST,
+                data: {}
             });
 
         const account = await prisma.whatsAppAccount.findUnique({ where: { id: Number(waAccountId) } });
         if (!account) {
-            return res.status(404).json({
-                message: "Account not found"
+            return res.status(RESPONSE_CODES.NOT_FOUND).json({
+                status: 0,
+                message: "Account not found",
+                statusCode: RESPONSE_CODES.NOT_FOUND,
+                data: {}
             })
         }
 

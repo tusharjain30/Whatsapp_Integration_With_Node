@@ -2,25 +2,31 @@ const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('../../generated/prisma/client');
 const prisma = new PrismaClient();
-const { fetchBusinessInfo, fetchPhoneNumbers } = require('../../services/whatsapp');
+const { fetchPhoneNumbers } = require('../../services/whatsapp');
 const { RESPONSE_CODES } = require('../../config/constant');
 
 router.post('/', async (req, res) => {
     try {
 
-        const { accessToken, webhookUrl } = req.body;
+        const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+        const { webhookUrl } = req.body;
         if (!accessToken)
-            return res.status(400).json({
-                message: 'accessToken required'
+            return res.status(RESPONSE_CODES.BAD_REQUEST).json({
+                status: 0,
+                message: "accessToken required",
+                statusCode: RESPONSE_CODES.BAD_REQUEST,
+                data: {}
             });
 
-        const business = await fetchBusinessInfo(accessToken);  // fetch waba id using access token
-        const wabaId = business.id;
+        const wabaId = process.env.WABA_ID;
         const numbers = await fetchPhoneNumbers(wabaId, accessToken); // fetch phone numbers using wabaid, accessToken
         const first = numbers?.data?.[0];
         if (!first)
-            return res.status(400).json({
-                message: 'No phone numbers in WABA'
+            return res.status(RESPONSE_CODES.BAD_REQUEST).json({
+                status: 0,
+                message: "No phone numbers in WABA",
+                statusCode: RESPONSE_CODES.BAD_REQUEST,
+                data: {}
             });
 
         // Create or update WhatsAppAccount record
