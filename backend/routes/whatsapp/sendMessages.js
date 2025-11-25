@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const { PrismaClient } = require("../../generated/prisma/client");
-const { RESPONSE_CODES } = require("../../config/constant");
 const prisma = new PrismaClient();
+const { RESPONSE_CODES } = require("../../config/constant");
 const { sendTextMessage } = require("../../services/whatsapp");
 
 router.post('/text', async (req, res) => {
@@ -66,7 +66,7 @@ router.post('/text', async (req, res) => {
                 conversationId: conversation.id,
                 direction: "OUTBOUND",
                 status: "SENT",
-                messageType: "TEXT",
+                messageType: "text",
                 text,
                 waMessageId,
                 timestamp: new Date()

@@ -13,6 +13,7 @@ const fetchPhoneNumbers = async (wabaId, accessToken) => {
         return res.data;
 
     } catch (error) {
+        console.log("error", error?.response?.data);
         throw error.response?.data || error;
     }
 };
@@ -38,9 +39,106 @@ const sendTextMessage = async (phoneNumberId, accessToken, to, text) => {
         console.log("error", error?.response?.data);
         throw error.response?.data || error;
     }
-}
+};
+
+const sendImageMessage = async (phoneNumberId, accessToken, to, imageUrl, caption = "") => {
+    try {
+        const res = await axios.post(
+            `${GRAPH}/${phoneNumberId}/messages`,
+            {
+                messaging_product: "whatsapp",
+                to: to,
+                type: "image",
+                image: {
+                    link: imageUrl,   // PUBLIC DIRECT URL REQUIRED
+                    caption: caption
+                }
+            },
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+
+        return res.data;
+
+    } catch (error) {
+        console.log("error", error?.response?.data);
+        throw error.response?.data || error;
+    }
+};
+
+const sendDocumentMessage = async (phoneNumberId, accessToken, to, waMediaId, caption, fileName) => {
+    try {
+        const sendRes = await axios({
+            method: "POST",
+            url: `${GRAPH}/${phoneNumberId}/messages`,
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json"
+            },
+            data: {
+                messaging_product: "whatsapp",
+                to: to,  // FIXED
+                type: "document",
+                document: {
+                    id: waMediaId,
+                    caption: caption || "",
+                    filename: fileName
+                }
+            }
+        });
+
+        return sendRes?.data?.messages?.[0]?.id;
+
+    } catch (error) {
+        console.log("error", error?.response?.data);
+        throw error.response?.data || error;
+    }
+};
+
+const uploadDocument = async (phoneNumberId, accessToken, fileUrl, fileName) => {
+    try {
+        const mediaRes = await axios({
+            method: "POST",
+            url: `${GRAPH}/${phoneNumberId}/media`,
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json"
+            },
+            data: {
+                messaging_product: "whatsapp",
+                type: "document",
+                url: fileUrl,
+                filename: fileName
+            }
+        });
+
+        return mediaRes.data.id;
+
+    } catch (error) {
+        console.log("error", error?.response?.data);
+        throw error.response?.data || error;
+    }
+};
+
+async function getMediaUrl(mediaId, accessToken) {
+    try {
+        const res = await axios.get(
+            `${GRAPH}/${mediaId}`,
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+
+        return res.data.url || null; // Temporary download URL
+
+    } catch (error) {
+        console.log("Failed to fetch media URL:", err?.response?.data);
+        throw error.response?.data || error;
+    }
+};
 
 module.exports = {
     fetchPhoneNumbers,
-    sendTextMessage
-}
+    sendTextMessage,
+    sendImageMessage,
+    sendDocumentMessage,
+    uploadDocument,
+    getMediaUrl
+};

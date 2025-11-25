@@ -32,11 +32,11 @@ enum MessageStatus {
 }
 
 enum MessageType {
-  TEXT
-  IMAGE
-  AUDIO
-  VIDEO
-  DOCUMENT
+  text
+  image
+  audio
+  video
+  document
 }
 
 // ===============================
@@ -117,7 +117,7 @@ model Message {
 
   messageType MessageType // text, image, audio, video, document
   text        String?
-  mediaId     Int?
+  mediaId     String?
 
   waMessageId  String? // WhatsApp message ID
   timestamp    DateTime?
@@ -178,7 +178,7 @@ model Conversation {
 //
 
 model Media {
-  id Int @id @default(autoincrement())
+  id String @id
 
   waAccountId Int
   type        String // image, video, audio, document, sticker
@@ -235,7 +235,7 @@ model BotRule {
   triggerType  String // KEYWORD, CONTAINS, EXACT, STARTS_WITH, AI
   keyword      String?
   replyText    String?
-  replyMediaId Int?
+  replyMediaId String?
   isActive     Boolean  @default(true)
   isDeleted    Boolean  @default(false)
   createdAt    DateTime @default(now())

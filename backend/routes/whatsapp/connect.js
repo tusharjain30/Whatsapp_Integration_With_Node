@@ -19,7 +19,7 @@ router.post('/', async (req, res) => {
             });
 
         const wabaId = process.env.WABA_ID;
-        const numbers = await fetchPhoneNumbers(wabaId, accessToken); // fetch phone numbers using wabaid, accessToken
+        const numbers = await fetchPhoneNumbers(wabaId, accessToken); // It only provides business numbers registered in Waba
         const first = numbers?.data?.[0];
         if (!first)
             return res.status(RESPONSE_CODES.BAD_REQUEST).json({
