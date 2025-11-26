@@ -20,14 +20,12 @@ const fetchPhoneNumbers = async (wabaId, accessToken) => {
 
 const sendTextMessage = async (phoneNumberId, accessToken, to, text) => {
     try {
-        const res = await axios.post(
-            `${GRAPH}/${phoneNumberId}/messages`,
-            {
-                messaging_product: "whatsapp",
-                to: to,
-                type: "text",
-                text: { body: text }
-            },
+        const res = await axios.post(`${GRAPH}/${phoneNumberId}/messages`, {
+            messaging_product: "whatsapp",
+            to: to,
+            type: "text",
+            text: { body: text }
+        },
             {
                 headers: { Authorization: `Bearer ${accessToken}` }
             }
@@ -94,6 +92,63 @@ const sendDocumentMessage = async (phoneNumberId, accessToken, to, waMediaId, ca
     }
 };
 
+const sendVideo = async (phoneNumberId, phone, videoUrl, caption, accessToken) => {
+    try {
+        const url = `${GRAPH}/${phoneNumberId}/messages`;
+
+        const payload = {
+            messaging_product: "whatsapp",
+            to: phone,
+            type: "video",
+            video: {
+                link: videoUrl,
+                caption: caption || ""
+            }
+        };
+
+        const apiResponse = await axios.post(url, payload, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json"
+            }
+        });
+
+        return apiResponse.data?.messages?.[0]?.id || null;
+
+    } catch (error) {
+        console.log("error", error?.response?.data);
+        throw error.response?.data || error;
+    }
+};
+
+const sendAudio = async (phoneNumberId, phone, audioUrl, accessToken) => {
+    try {
+        const url = `${GRAPH}/${phoneNumberId}/messages`;
+
+        const payload = {
+            messaging_product: "whatsapp",
+            to: phone,
+            type: "audio",
+            audio: {
+                link: audioUrl
+            }
+        };
+
+        const apiResponse = await axios.post(url, payload, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json"
+            }
+        });
+
+        return apiResponse.data?.messages?.[0]?.id || null;
+
+    } catch (error) {
+        console.log("error", error?.response?.data);
+        throw error.response?.data || error;
+    }
+};
+
 const uploadDocument = async (phoneNumberId, accessToken, fileUrl, fileName) => {
     try {
         const mediaRes = await axios({
@@ -140,5 +195,7 @@ module.exports = {
     sendImageMessage,
     sendDocumentMessage,
     uploadDocument,
-    getMediaUrl
+    getMediaUrl,
+    sendVideo,
+    sendAudio
 };

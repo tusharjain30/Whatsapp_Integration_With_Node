@@ -27,6 +27,15 @@ router.post('/text', async (req, res) => {
             })
         }
 
+        if (!account.isConnected) {
+            return res.status(RESPONSE_CODES.BAD_REQUEST).json({
+                status: 0,
+                message: "WhatsApp account is not connected",
+                statusCode: RESPONSE_CODES.BAD_REQUEST,
+                data: {}
+            });
+        }
+
         // Send via WhatsApp Cloud API
         const sent = await sendTextMessage( // This is the function that hits the actual WhatsApp Cloud API, and the actual message is delivered to WhatsApp.
             account.phoneNumberId,

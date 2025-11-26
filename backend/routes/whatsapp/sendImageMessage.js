@@ -32,6 +32,15 @@ router.post('/image', async (req, res) => {
             });
         }
 
+        if (!account.isConnected) {
+            return res.status(RESPONSE_CODES.BAD_REQUEST).json({
+                status: 0,
+                message: "WhatsApp account is not connected",
+                statusCode: RESPONSE_CODES.BAD_REQUEST,
+                data: {}
+            });
+        }
+
         // Send image message via WhatsApp Cloud API
         const apiResponse = await sendImageMessage(
             account.phoneNumberId,

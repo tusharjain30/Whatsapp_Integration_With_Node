@@ -47,9 +47,9 @@ model WhatsAppAccount {
   id Int @id @default(autoincrement())
 
   phoneNumber       String
-  phoneNumberId     String? // WhatsApp Cloud API phone_number_id
-  businessAccountId String? // WhatsApp Business Account ID
-  displayName       String? // WhatsApp profile name
+  phoneNumberId     String?
+  businessAccountId String?
+  displayName       String?
   accessToken       String
   isConnected       Boolean  @default(false)
   webhookUrl        String?
@@ -57,11 +57,10 @@ model WhatsAppAccount {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  // Relations
   contacts      Contact[]
   conversations Conversation[]
   messages      Message[]
-  media         Media[]
+  media         Media[]        @relation(name: "AccountMedia") // <-- FIXED
   webhookEvents WebhookEvent[]
   botRules      BotRule[]
   watemplates   WATemplate[]
@@ -178,19 +177,17 @@ model Conversation {
 //
 
 model Media {
-  id String @id
-
+  id          String   @id
   waAccountId Int
-  type        String // image, video, audio, document, sticker
+  type        String
   mimeType    String?
   size        Int?
-  url         String // storage URL
-  waMediaId   String? // WhatsApp cloud media id
+  url         String
+  waMediaId   String?
   isDeleted   Boolean  @default(false)
   createdAt   DateTime @default(now())
 
-  // Relations
-  whatsappAccount WhatsAppAccount @relation(fields: [waAccountId], references: [id])
+  whatsappAccount WhatsAppAccount @relation(name: "AccountMedia", fields: [waAccountId], references: [id])
   messages        Message[]
   botRules        BotRule[]
 

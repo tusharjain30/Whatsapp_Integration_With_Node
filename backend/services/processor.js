@@ -9,100 +9,105 @@ async function processIncomingWebhook(account, field, payload) {
         const messages = payload.messages || [];
 
         for (const msg of messages) {
-
-            const from = msg.from;
             const waMessageId = msg.id;
+            const from = msg.from;
             const msgType = msg.type;
 
             let text = null;
-            let incomingMediaId = null;
+            let mediaType = null;
+            let mediaId = null;
+            let mimeType = null;
+            let fileSize = null;
 
-            // TEXT
+            // HANDLE TEXT
             if (msgType === "text") {
                 text = msg.text?.body || null;
             }
 
-            // UNIFIED MEDIA HANDLING
-            const mediaTypes = ["image", "video", "audio", "document"];
+            // HANDLE MEDIA + CAPTION (TEXT)
+            const mediaTypes = ["image", "video", "document", "audio"];
 
             if (mediaTypes.includes(msgType)) {
-                incomingMediaId = msg[msgType]?.id || null;
+                mediaType = msgType;
+                mediaId = msg[msgType]?.id || null;
+                mimeType = msg[msgType]?.mime_type || null;
+                fileSize = msg[msgType]?.file_size || null;
+
+                // Caption as text (if exists)
+                if (msg[msgType]?.caption) {
+                    text = msg[msgType].caption;
+                }
             }
 
-            if (incomingMediaId) incomingMediaId = String(incomingMediaId);
+            if (mediaId) {
+                mediaId = String(mediaId);
+            }
 
-            // CONTACT UPSERT 
+            // UPSERT CONTACT
             const contact = await prisma.contact.upsert({
                 where: {
                     waAccountId_phone: {
                         waAccountId: account.id,
-                        phone: from
-                    }
+                        phone: from,
+                    },
                 },
                 create: {
                     waAccountId: account.id,
                     phone: from,
-                    lastMessageAt: new Date()
+                    lastMessageAt: new Date(),
                 },
                 update: {
-                    lastMessageAt: new Date()
-                }
+                    lastMessageAt: new Date(),
+                },
             });
 
-            // CONVERSATION UPSERT
+            // UPSERT CONVERSATION
             const conversation = await prisma.conversation.upsert({
                 where: {
                     waAccountId_contactId: {
                         waAccountId: account.id,
-                        contactId: contact.id
-                    }
+                        contactId: contact.id,
+                    },
                 },
                 create: {
                     waAccountId: account.id,
                     contactId: contact.id,
                     lastMessage: text || msgType,
-                    lastMessageAt: new Date()
+                    lastMessageAt: new Date(),
                 },
                 update: {
                     lastMessage: text || msgType,
-                    lastMessageAt: new Date()
-                }
+                    lastMessageAt: new Date(),
+                },
             });
 
-            // MEDIA SAVE (IF MEDIA MESSAGE)
+            // SAVE MEDIA (IF ANY)
             let mediaRecord = null;
-            if (incomingMediaId) {
 
-                const mimeType = msg[msgType]?.mime_type || null;
-                const fileSize = msg[msgType]?.file_size || null;
-
-                // It only fetches a temporary download URL – from the WhatsApp Cloud API
-                const temporaryUrl = await getMediaUrl(
-                    incomingMediaId,
+            if (mediaId) {
+                const tempUrl = await getMediaUrl(
+                    mediaId,
                     account.accessToken
                 );
 
                 mediaRecord = await prisma.media.upsert({
-                    where: { id: incomingMediaId },
+                    where: { id: mediaId },
                     create: {
-                        id: incomingMediaId,
+                        id: mediaId,
                         waAccountId: account.id,
-                        type: msgType,
+                        type: mediaType,
                         mimeType: mimeType,
                         size: fileSize,
-                        url: temporaryUrl,
-                        waMediaId: incomingMediaId,
-                        whatsappAccount: {
-                            connect: { id: account.id }
-                        }
+                        url: tempUrl,
+                        waMediaId: mediaId,
                     },
                     update: {
-                        url: temporaryUrl // update fresh URL
-                    }
+                        url: tempUrl,
+                    },
                 });
             }
 
-            // MESSAGE RECORD CREATE
+            // SAVE MESSAGE RECORD
             await prisma.message.create({
                 data: {
                     waAccountId: account.id,
@@ -112,21 +117,26 @@ async function processIncomingWebhook(account, field, payload) {
                     status: "DELIVERED",
                     messageType: msgType,
                     text: text,
-                    mediaId: incomingMediaId || null,
+                    mediaId: mediaRecord ? mediaRecord.id : null,
                     waMessageId: waMessageId,
+
                     timestamp: msg.timestamp
                         ? new Date(Number(msg.timestamp) * 1000)
-                        : new Date()
-                }
+                        : new Date(),
+                },
             });
-        };
+        }
 
-        console.log("Webhook Process Completed");
+        console.log("Webhook Process Completed Successfully");
 
     } catch (error) {
-        console.log("Webhook Processing Error:", error?.response?.data || error);
+        console.log(
+            "Webhook Processing Error:",
+            error?.response?.data || error
+        );
         throw error?.response?.data || error;
     }
-};
+}
 
 module.exports = { processIncomingWebhook };
+
