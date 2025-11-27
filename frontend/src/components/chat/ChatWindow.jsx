@@ -1,26 +1,22 @@
 import { useEffect, useState } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
-// import {
-//   fetchMessages,
-//   sendTextMessage,
-// } from "../../utils/api";
 import ChatHeader from "./ChatHeader";
 import MessageBubble from "./MessageBubble";
 import MessageInput from "./MessageInput";
-// import { fetchContacts } from "../../utils/api";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchMessages, sendTextMessage } from "../../store/slices/MessageSlice";
 
 const ChatWindow = () => {
-  const { contactId } = useParams();
-  const { waAccountId } = useOutletContext();
 
-  const [messages, setMessages] = useState([]);
-  const [contact, setContact] = useState(null);
+  const dispatch = useDispatch();
+  const { isLoading, messageData, messages } = useSelector((state) => state.messages);
+  const { contactId, phone } = useParams();
+  const { waAccountId } = useOutletContext();
 
   useEffect(() => {
     if (!contactId) return;
-    // loadContact();
-    // loadMessages();
-  }, [contactId]);
+    loadMessages();
+  }, [contactId, messageData]);
 
   // const loadContact = async () => {
   //   // simple way: get all contacts and find one
@@ -31,24 +27,28 @@ const ChatWindow = () => {
   //   setContact(c || null);
   // };
 
-  // const loadMessages = async () => {
-  //   const res = await fetchMessages(waAccountId, contactId);
-  //   setMessages(res.messages || []);
-  // };
+  const loadMessages = async () => {
+    dispatch(fetchMessages(waAccountId, contactId));
+  };
 
   const handleSendText = async (text) => {
-    if (!contact) return;
+    dispatch(sendTextMessage({
+      waAccountId,
+      to: phone,
+      text: text
+    }))
     // await sendTextMessage({
     //   waAccountId,
     //   phone: contact.phone,
     //   message: text,
     // });
-    // await loadMessages();
+    await loadMessages();
   };
 
   return (
     <div className="flex flex-col w-full h-full">
-      <ChatHeader phone={contact?.phone} />
+
+      <ChatHeader phone={phone} />
 
       <div className="flex-1 bg-slate-50 overflow-y-auto p-3 space-y-1">
         {messages.length === 0 && (
@@ -57,7 +57,7 @@ const ChatWindow = () => {
           </div>
         )}
 
-        {messages.map((m) => (
+        {messages && messages.map((m) => (
           <MessageBubble key={m.id} msg={m} />
         ))}
       </div>

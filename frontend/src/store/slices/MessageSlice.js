@@ -26,16 +26,16 @@ const messageSlice = createSlice({
         },
 
         sendMessageRequest(state, action) {
-            isLoading = true,
-                messageData = {}
+            state.isLoading = true,
+                state.messageData = {}
         },
         sendMessageSuccess(state, action) {
-            isLoading = false,
-                messageData = action.payload
+            state.isLoading = false,
+                state.messageData = action.payload
         },
         sendMessageFailed(state, action) {
-            isLoading = false
-            messageData = {}
+            state.isLoading = false
+            state.messageData = {}
         }
     }
 });
@@ -49,7 +49,7 @@ export const fetchMessages = (waAccountId, contactId) => async (dispatch) => {
                 withCredentials: true
             }
         );
-        console.log("Fetch Messages:", response);
+        console.log("Fetch Messages:", response.data.data.messages);
         dispatch(messageSlice.actions.fetchMessagesSuccess(response.data.data.messages))
     } catch (error) {
         dispatch(messageSlice.actions.fetchMessagesFailed());
@@ -59,7 +59,7 @@ export const fetchMessages = (waAccountId, contactId) => async (dispatch) => {
 };
 
 // SEND TEXT MESSAGE
-export const sendTextMessage = () => async (dispatch) => {
+export const sendTextMessage = (data) => async (dispatch) => {
     dispatch(messageSlice.actions.sendMessageRequest());
     try {
         const response = await axios.post(`${API_BASE}/send-messages/text`, data,
@@ -69,6 +69,7 @@ export const sendTextMessage = () => async (dispatch) => {
             }
         );
         dispatch(messageSlice.actions.sendMessageSuccess(response.data.data));
+        console.log(response.data.message)
         toast.success(response.data.message);
     } catch (error) {
         dispatch(messageSlice.actions.sendMessageFailed());

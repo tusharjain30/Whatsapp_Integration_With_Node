@@ -9,7 +9,7 @@ const Sidebar = ({ waAccountId }) => {
 
   const { contactList } = useSelector((state) => state.contacts);
   // const [contacts, setContacts] = useState([]);
-  const [search, setSearch] = useState("");  // git commit -m "Updated code"
+  const [search, setSearch] = useState("");
 
   const dispatch = useDispatch();
 
@@ -46,7 +46,7 @@ const Sidebar = ({ waAccountId }) => {
             key={c.contactId}
             contact={c}
             active={currentContactId === c.contactId}
-            onClick={() => navigate(`/chat/${c.contactId}`)}
+            onClick={() => navigate(`/chat/${c.contactId}/${c.phone}`)}
           />
         ))}
       </div>

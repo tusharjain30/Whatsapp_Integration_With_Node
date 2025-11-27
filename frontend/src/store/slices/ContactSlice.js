@@ -35,7 +35,7 @@ export const fetchContactList = (waAccountId) => async (dispatch) => {
             }
         );
         console.log("Fetch Messages:", response);
-        dispatch(messageSlice.actions.fetchContactListSuccess(response.data.data))
+        dispatch(contactSlice.actions.fetchContactListSuccess(response.data.data))
     } catch (error) {
         dispatch(contactSlice.actions.fetchContactListFailed());
         console.log("Fetch contact list", error);
