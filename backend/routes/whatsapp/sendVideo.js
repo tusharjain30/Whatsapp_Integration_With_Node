@@ -122,8 +122,11 @@ router.post("/send-video", async (req, res) => {
 
     } catch (error) {
         console.log("SEND VIDEO ERROR:", error.response?.data || error);
-        res.status(500).json({
-            error: error.response?.data || "Something went wrong"
+        res.status(RESPONSE_CODES.ERROR).json({
+            status: 0,
+            message: error.response?.data || "Something went wrong",
+            statusCode: RESPONSE_CODES.ERROR,
+            data: {}
         });
     }
 });

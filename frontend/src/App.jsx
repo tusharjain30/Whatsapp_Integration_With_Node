@@ -1,18 +1,22 @@
-import { BrowserRouter as Router, Routes, Route, BrowserRouter } from "react-router-dom";
-import Home from "./components/Home";
-import About from "./components/About";
-import Navbar from "./components/Navbar";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import ChatLayout from "./pages/ChatLayout";
+import EmptyState from "./pages/EmptyState";
+import ChatWindow from "./components/chat/ChatWindow";
 
 const App = () => {
    return (
-      <Router>
-         <Navbar />
+      <BrowserRouter>
          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
+            <Route path="/" element={<ChatLayout />}>
+               <Route index element={<EmptyState />} />
+               <Route path="chat/:contactId" element={<ChatWindow />} />
+            </Route>
+
+            {/* redirect anything unknown */}
+            <Route path="*" element={<Navigate to="/" />} />
          </Routes>
-      </Router>
-   )
+      </BrowserRouter>
+   );
 }
 
 export default App;
