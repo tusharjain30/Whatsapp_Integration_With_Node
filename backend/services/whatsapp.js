@@ -39,7 +39,7 @@ const sendTextMessage = async (phoneNumberId, accessToken, to, text) => {
     }
 };
 
-const sendImageMessage = async (phoneNumberId, accessToken, to, imageUrl, caption = "") => {
+const sendImageMessage = async (phoneNumberId, accessToken, to, publicUrl, caption = "") => {
     try {
         const res = await axios.post(
             `${GRAPH}/${phoneNumberId}/messages`,
@@ -48,7 +48,7 @@ const sendImageMessage = async (phoneNumberId, accessToken, to, imageUrl, captio
                 to: to,
                 type: "image",
                 image: {
-                    link: imageUrl,   // PUBLIC DIRECT URL REQUIRED
+                    link: publicUrl,   // PUBLIC DIRECT URL REQUIRED
                     caption: caption
                 }
             },

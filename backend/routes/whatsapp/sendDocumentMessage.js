@@ -4,15 +4,31 @@ const { PrismaClient } = require("../../generated/prisma/client");
 const prisma = new PrismaClient();
 const { RESPONSE_CODES } = require('../../config/constant');
 const { sendDocumentMessage, uploadDocument } = require("../../services/whatsapp");
+const { uploadWhatsappMedia } = require("../../services/multer"); 4
+const { formatAssetPath } = require("../../utils/formatAssetPath");
 
-router.post("/document", async (req, res) => {
+router.post("/document", uploadWhatsappMedia.single("media"), async (req, res) => {
     try {
-        const { waAccountId, contactId, fileUrl, fileName, caption } = req.body;
+        const { waAccountId, contactId, fileName, caption } = req.body;
 
-        if (!waAccountId || !contactId || !fileUrl) {
+        const file = req.file;
+
+        if (!file) {
             return res.status(RESPONSE_CODES.BAD_REQUEST).json({
                 status: 0,
-                message: "waAccountId, contactId & fileUrl are required",
+                message: "Media file is required",
+                statusCode: RESPONSE_CODES.BAD_REQUEST,
+                data: {}
+            });
+        };
+
+
+        const publicUrl = formatAssetPath(file.path);
+
+        if (!waAccountId || !contactId || !publicUrl) {
+            return res.status(RESPONSE_CODES.BAD_REQUEST).json({
+                status: 0,
+                message: "waAccountId, contactId & publicUrl are required",
                 statusCode: RESPONSE_CODES.BAD_REQUEST,
                 data: {}
             });
@@ -81,7 +97,7 @@ router.post("/document", async (req, res) => {
         const waMediaId = await uploadDocument(
             phoneNumberId,
             accessToken,
-            fileUrl,
+            publicUrl,
             fileName
         );
 
@@ -92,7 +108,7 @@ router.post("/document", async (req, res) => {
                 waAccountId: Number(waAccountId),
                 type: "document",
                 mimeType: "application/pdf",
-                url: fileUrl,
+                url: publicUrl,
                 waMediaId: waMediaId
             }
         });

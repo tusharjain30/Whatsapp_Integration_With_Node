@@ -4,16 +4,31 @@ const { PrismaClient } = require("../../generated/prisma/client");
 const prisma = new PrismaClient();
 const { RESPONSE_CODES } = require('../../config/constant');
 const { sendImageMessage } = require("../../services/whatsapp");
+const { uploadWhatsappMedia } = require("../../services/multer"); 4
+const { formatAssetPath } = require("../../utils/formatAssetPath");
 
-router.post('/image', async (req, res) => {
+router.post('/image', uploadWhatsappMedia.single("media"), async (req, res) => {
     try {
 
-        const { waAccountId, to, imageUrl, caption } = req.body;
+        const { waAccountId, to, caption } = req.body;
+        const file = req.file;
 
-        if (!waAccountId || !to || !imageUrl) {
+        if (!file) {
             return res.status(RESPONSE_CODES.BAD_REQUEST).json({
                 status: 0,
-                message: "waAccountId, to & imageUrl are required",
+                message: "Media file is required",
+                statusCode: RESPONSE_CODES.BAD_REQUEST,
+                data: {}
+            });
+        };
+
+
+        const publicUrl = formatAssetPath(file.path);
+
+        if (!waAccountId || !to || !publicUrl) {
+            return res.status(RESPONSE_CODES.BAD_REQUEST).json({
+                status: 0,
+                message: "waAccountId, to, publicUrl are required",
                 statusCode: RESPONSE_CODES.BAD_REQUEST,
                 data: {}
             });
@@ -46,7 +61,7 @@ router.post('/image', async (req, res) => {
             account.phoneNumberId,
             account.accessToken,
             to,
-            imageUrl,
+            publicUrl,
             caption
         );
 
@@ -90,11 +105,12 @@ router.post('/image', async (req, res) => {
                 id: waMessageId,
                 waAccountId: account.id,
                 type: "image",
-                url: imageUrl,
+                url: publicUrl,
                 mimeType: "image/jpeg",
                 waMediaId: waMessageId
             }
         });
+
 
         // Message Save
         const message = await prisma.message.create({
